@@ -9,8 +9,8 @@ import org.openrdf.model.Graph;
 import org.openrdf.model.URI;
 
 /**
- * @author monika
- *
+ * @author monika 
+ * A class representing the Aggregation event
  */
 public class AggregationEvent extends EPCISEvent{
 
