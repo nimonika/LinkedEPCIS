@@ -36,6 +36,7 @@ public abstract class EPCISEvent {
 	protected Namespaces ns = new Namespaces();
 	protected ArrayList<Transaction> transactions = null;
 	Logger logger = Logger.getLogger(EPCISEvent.class);
+        protected URI eventURI=null;
 
 	/**
 	 * @param recordTime the recordTime to set
@@ -56,6 +57,7 @@ public abstract class EPCISEvent {
 
 		// create the event
 		mySubject = myFactory.createURI(ns.getNewEventIRI(eventPrefix));
+                eventURI=mySubject;
 		myObject = myFactory.createURI(ns.getIRIForPrefix("eem"), eventType);
 		myGraph.add(mySubject, RDF.TYPE, myObject);
 		
@@ -163,7 +165,7 @@ public abstract class EPCISEvent {
 
 	public void persistEvent(String file) {
 		persistTransaction();
-		epcs.persistGraphToFile(myGraph, file);
+		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
 	}
 	
 
@@ -189,7 +191,7 @@ public abstract class EPCISEvent {
 	protected void persistEvent(Graph g, ArrayList epcArray, String file) {
 		myGraph=g;
 		persistEvent(epcArray);
-		epcs.persistGraphToFile(myGraph, file);
+		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
 	}
 
 	// method for persisting the event
@@ -202,7 +204,7 @@ public abstract class EPCISEvent {
 	// method for persisting the event
 	protected void persistEvent(ArrayList epcArray, String file) {
 		persistEvent(epcArray);
-		epcs.persistGraphToFile(myGraph, file);
+		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
 	}
 
 	private Graph setTemporalProperties(Namespaces ns, Graph myGraph,
@@ -244,4 +246,10 @@ public abstract class EPCISEvent {
 		myGraph = epcs
 				.setReaderForEvent(ns, prefix, myGraph, mySubject, reader);
 	}
+        
+         public URI getEventURI()
+        {
+            
+            return eventURI;
+        }
 }

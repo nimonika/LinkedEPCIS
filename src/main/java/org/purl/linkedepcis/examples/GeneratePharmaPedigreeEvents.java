@@ -3,6 +3,10 @@
  */
 package org.purl.linkedepcis.examples;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.purl.linkedepcis.cbv.BusinessStep;
 import org.purl.linkedepcis.cbv.Disposition;
 import org.purl.linkedepcis.cbv.Site;
@@ -12,6 +16,8 @@ import org.purl.linkedepcis.eem.AggregationEvent;
 import org.purl.linkedepcis.eem.EPC;
 import org.purl.linkedepcis.eem.Namespaces;
 import org.purl.linkedepcis.eem.ObjectEvent;
+import org.purl.linkedepcis.pedigree.Pedigree;
+import org.purl.linkedepcis.pedigree.PedigreeStatus;
 
 
 
@@ -29,6 +35,7 @@ public class GeneratePharmaPedigreeEvents {
 		gppe.generateCommissioningEvent();
 		gppe.generatePackingEvent();
 		gppe.generateShippingEvent();
+              
 
 	}
 
@@ -84,7 +91,7 @@ public GeneratePharmaPedigreeEvents() {
 		// associate the aggregation event with the epcs
 		age.addEPCTOAggregationEvent(epc1, "epc");
 		age.addEPCTOAggregationEvent(epc2, "epc");
-	    age.addEPCTOAggregationEvent(epc3, "epc");
+	        age.addEPCTOAggregationEvent(epc3, "epc");
 		age.addEPCTOAggregationEvent(epc4, "epc");
 		age.setAction(Action.ADD);
 		age.setBusinessStepType(BusinessStep.PACKING);
@@ -93,6 +100,7 @@ public GeneratePharmaPedigreeEvents() {
 		Site readSite = new Site("030001.111111.0");
 		age.setReadPointLocation(ns, "loc", readSite);
 		age.setBusinessLocation(readSite);
+                
 		age.persistEvent("pharma_packing.ttl");
 		
 	}
@@ -118,6 +126,7 @@ public GeneratePharmaPedigreeEvents() {
 	    obe1.addEPCTOEvent(epc3, "epc");
 		obe1.addEPCTOEvent(epc4, "epc");
 		
+                System.out.println(obe1.getEventURI());
 		obe1.setAction(Action.ADD);
 		obe1.setBusinessStepType(BusinessStep.COMMISSIONING);
 		obe1.setDisposition(Disposition.ACTIVE);
@@ -127,6 +136,9 @@ public GeneratePharmaPedigreeEvents() {
 		obe1.persistEvent("pharma_commissioning.ttl");
 	
 	}
+
+ 
+    
 
 	
 }

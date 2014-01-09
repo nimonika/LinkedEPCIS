@@ -41,7 +41,16 @@ public class ObjectEvent extends EPCISEvent {
 		
 	}
 	
-	
+	//add EPCArray to the event
+        
+        public void addEPCListToEvent(ArrayList<EPC> listOfEPCs, String prefix)
+        {
+          
+            for(EPC s: listOfEPCs)
+            {
+                epcArray.add(ns.getIRIForPrefix(prefix) + s.getEPCValue());
+            }
+        }
 
 	/*public void persistEvent()
 	{

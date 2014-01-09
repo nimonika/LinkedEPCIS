@@ -25,10 +25,11 @@ public class Namespaces {
 	public Namespaces()
 	{
 		
-		setIRIandPrefix("http://purl.org/FIspace/eem#", "eem");
-		setIRIandPrefix("http://purl.org/co#", "co");
-		setIRIandPrefix("http://purl.org/FIspace/cbv#", "cbv");
-		setIRIandPrefix("http://www.w3.org/2006/vcard/ns#", "vcard");
+		setIRIandPrefix("eem", "http://purl.org/FIspace/eem#");
+		setIRIandPrefix("co", "http://purl.org/co#");
+		setIRIandPrefix("cbv", "http://purl.org/FIspace/cbv#");
+		setIRIandPrefix("vcard", "http://www.w3.org/2006/vcard/ns#");
+                setIRIandPrefix("wgs84", "http://www.w3.org/2003/01/geo/wgs84_pos#");
 	}
 	
 	
@@ -48,7 +49,7 @@ public class Namespaces {
 	
 	
 	// set the base IRI for events and the prefix
-	public void setIRIandPrefix(String eventIRI, String prefix) {
+	public void setIRIandPrefix(String prefix, String eventIRI) {
 	
 		namespacePrefixes.remove(prefix);
 		namespacePrefixes.put(prefix, baseIRI.concat(eventIRI));
