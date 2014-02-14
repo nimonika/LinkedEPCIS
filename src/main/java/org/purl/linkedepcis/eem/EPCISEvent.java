@@ -46,19 +46,24 @@ public abstract class EPCISEvent {
 		myGraph=epcs.setEventRecordedTime(ns, myGraph, mySubject, recordTime);
 	}
 
-	private void setupBaseEventModel(Namespaces ns, String eventPrefix,
+	private void setupBaseEventModel(Namespaces ns1, String eventPrefix,
 			String eventType) {
 		// an empty sesame graph
-		myGraph = new org.openrdf.model.impl.GraphImpl();
+		myGraph = new org.openrdf.model.impl.LinkedHashModel();
 		myFactory = ValueFactoryImpl.getInstance();
 
 		epcs = new EPCISCommon();
-		this.ns = ns;
-
+		this.ns = ns1;
+              //  logger.info(ns.getIRIForPrefix("epc"));
+                //extract the graph URI
+              
 		// create the event
 		mySubject = myFactory.createURI(ns.getNewEventIRI(eventPrefix));
                 eventURI=mySubject;
 		myObject = myFactory.createURI(ns.getIRIForPrefix("eem"), eventType);
+                
+                String graphURI=ns.getContextURI();
+                logger.info(graphURI);
 		myGraph.add(mySubject, RDF.TYPE, myObject);
 		
 		myGraph.add(
