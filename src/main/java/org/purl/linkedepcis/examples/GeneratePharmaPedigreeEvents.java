@@ -5,6 +5,7 @@ package org.purl.linkedepcis.examples;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.purl.linkedepcis.cbv.BusinessStep;
@@ -43,16 +44,26 @@ public GeneratePharmaPedigreeEvents() {
 		
 		//setup namespaces. The constructor takes the baseURI for the namespaces.
 		ns = new Namespaces("http://fispace.aston.ac.uk/ranbaxy/data/");
-		ns.setIRIandPrefix("epc/id/events/", "eve");
-		ns.setIRIandPrefix("epc/id/sgtin/", "epc");
-		ns.setIRIandPrefix("epc/id/sgln/", "loc");
+                //set the context of the graph identifier for the event. This 
+           
+	
+                ns.setContextURI("eventGraphID/") ;
+                
+		ns.setIRIandPrefix("eve", "epc/id/events/");
+             
+		ns.setIRIandPrefix("epc", "epc/id/sgtin/");
+		ns.setIRIandPrefix("loc", "epc/id/sgln/");
 		
 		 //setup namespaces for shipping Event
-		ns.setIRIandPrefix("epc/id/sscc/", "age");
+		ns.setIRIandPrefix("age", "epc/id/sscc/");
 		//setup namespaces for transaction identifiers
-		ns.setIRIandPrefix("/bt/inv/id/", "tinv");
-		ns.setIRIandPrefix("/bt/po/id/", "tpo");
-				
+		ns.setIRIandPrefix("tinv", "/bt/inv/id/");
+		ns.setIRIandPrefix("tpo", "/bt/po/id/");
+                
+              
+
+       
+              
 	}
 	
 	/**
@@ -108,11 +119,12 @@ public GeneratePharmaPedigreeEvents() {
 	private Namespaces ns;
 	
 	
-	
 
-	public void generateCommissioningEvent()
+
+        public void generateCommissioningEvent()
 	{
 		// create the event
+          
 		ObjectEvent obe1 = new ObjectEvent(ns, "eve");
 		// create the EPCs
 		EPC epc1 = new EPC("030001.0012345.10000000001");
@@ -123,7 +135,7 @@ public GeneratePharmaPedigreeEvents() {
 		// associate the object event with the epcs
 		obe1.addEPCTOEvent(epc1, "epc");
 		obe1.addEPCTOEvent(epc2, "epc");
-	    obe1.addEPCTOEvent(epc3, "epc");
+	        obe1.addEPCTOEvent(epc3, "epc");
 		obe1.addEPCTOEvent(epc4, "epc");
 		
                 System.out.println(obe1.getEventURI());
