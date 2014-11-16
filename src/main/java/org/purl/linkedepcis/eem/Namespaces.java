@@ -15,13 +15,22 @@ public class Namespaces {
     //a Map returning all the prefixes and IRIs
     private Map<String, String> namespacePrefixes;
     private String baseIRI = "";
+
+    public String getBaseIRI() {
+        return baseIRI;
+    }
     private String contextURI = "";
 
     public String getContextURI() {
         return namespacePrefixes.get("context");
     }
 
-    public void setContextURI(String contextURI) {
+    public void setContextURI(String contextURI, String artifact) {
+
+        namespacePrefixes.put("context", baseIRI.concat(contextURI) + artifact + EPCISPreferences.getEventCounter());
+    }
+    
+     public void setContextURI(String contextURI) {
 
         namespacePrefixes.put("context", baseIRI.concat(contextURI) + "event" + EPCISPreferences.getEventCounter());
     }
@@ -34,11 +43,13 @@ public class Namespaces {
 
     public Namespaces() {
         namespacePrefixes = new HashMap<String, String>();
-        setIRIandPrefix("eem", "http://purl.org/FIspace/eem#");
+        setIRIandPrefix("eem", "http://purl.org/eem#");
         setIRIandPrefix("co", "http://purl.org/co#");
-        setIRIandPrefix("cbv", "http://purl.org/FIspace/cbv#");
+        setIRIandPrefix("cbv", "http://purl.org/cbv#");
         setIRIandPrefix("vcard", "http://www.w3.org/2006/vcard/ns#");
         setIRIandPrefix("wgs84", "http://www.w3.org/2003/01/geo/wgs84_pos#");
+        setIRIandPrefix("ped", "http://purl.org/pedigree#");
+        setIRIandPrefix("dc", "http://purl.org/dc/elements/1.1/");
     }
 
     //return the eventIRI by appending the 
