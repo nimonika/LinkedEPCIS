@@ -43,28 +43,29 @@ public class LinkedEPCISEvents {
 		URI context = ValueFactoryImpl.getInstance().createURI("http://fispace.aston.ac.uk/linkedEPCIS/franzfarmer/data/events");
 		InputStream config= LinkedEPCISEvents.class.getClassLoader().getResourceAsStream("conf/linkedEpcis.ttl");
      
-		RepositoryConnection con =cf.setUpSesameRepository(config, defaultNS, false);
+                  String url = "http://windermere.aston.ac.uk/openrdf-sesame/";;
+		RepositoryConnection con =cf.setUpSesameRepository(config, url, defaultNS, false);
 		cf.dumpFileInRepository(new File("franz_tomato_punnets_commissioning.ttl"), defaultNS, RDFFormat.TURTLE, context);
 		
 		 config= LinkedEPCISEvents.class.getClassLoader().getResourceAsStream("conf/linkedEpcis.ttl");
 	     
-		con =cf.setUpSesameRepository(config, defaultNS, false);
+		con =cf.setUpSesameRepository(config, url, defaultNS, false);
 		cf.dumpFileInRepository(new File("franz_age1.ttl"), defaultNS, RDFFormat.TURTLE, context);
 		
 		 config= LinkedEPCISEvents.class.getClassLoader().getResourceAsStream("conf/linkedEpcis.ttl");
 	     
-		con =cf.setUpSesameRepository(config, defaultNS, false);
+		con =cf.setUpSesameRepository(config, url, defaultNS, false);
 		cf.dumpFileInRepository(new File("franz_age2.ttl"), defaultNS, RDFFormat.TURTLE, context);
 			
 		config= LinkedEPCISEvents.class.getClassLoader().getResourceAsStream("conf/linkedEpcis.ttl");
 	     
-		con =cf.setUpSesameRepository(config, defaultNS, false);
+		con =cf.setUpSesameRepository(config, url,  defaultNS, false);
 		cf.dumpFileInRepository(new File("franz_quantity.ttl"), defaultNS, RDFFormat.TURTLE, context);
 		
 		
 		config= LinkedEPCISEvents.class.getClassLoader().getResourceAsStream("conf/linkedEpcis.ttl");
 	     
-		con =cf.setUpSesameRepository(config, defaultNS, false);
+		con =cf.setUpSesameRepository(config, url, defaultNS, false);
 		cf.dumpFileInRepository(new File("franz_trans.ttl"), defaultNS, RDFFormat.TURTLE, context);
 		
 		
