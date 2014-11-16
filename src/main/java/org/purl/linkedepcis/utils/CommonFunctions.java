@@ -67,726 +67,762 @@ import java.math.BigDecimal;
 import org.purl.linkedepcis.query.QueryEPCISEvents;
 
 //This class contains common repository level functions
-
 /**
  * @author monika
- * 
+ *
  */
 public class CommonFunctions {
 
-	// The repository manager
-	private RepositoryManager repositoryManager;
+    // The repository manager
+    private RepositoryManager repositoryManager;
 
 	// From repositoryManager.getRepository(...) - the actual repository we
-	// will
-	// work with
-	private Repository repository;
+    // will
+    // work with
+    private Repository repository;
 
 	// From repository.getConnection() - the connection through which we
-	// will
-	// use the repository
-	private RepositoryConnection repositoryConnection = null;
+    // will
+    // use the repository
+    private RepositoryConnection repositoryConnection = null;
+    private String repositoryURL=null;
 
 	// methods that use the repository ***********
+    // get number of statements in the repos.
+    public int getNumberOfStatementsInRepos(InputStream config, String defaultNS) {
+        int numberOfStatements = 0;
 
-	// get number of statements in the repos.
-	public int getNumberOfStatementsInRepos(InputStream config, String defaultNS) {
-		int numberOfStatements = 0;
+        repositoryConnection = setUpSesameRepository(config, repositoryURL, defaultNS, false);
+        try {
+            RepositoryResult<Statement> statements = repositoryConnection
+                    .getStatements(null, null, null, false);
+            ArrayList<Statement> art = new ArrayList<Statement>();
+            while (statements.hasNext()) {
+                art.add(statements.next());
+            }
+            numberOfStatements = art.size();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        closeRepository(repositoryConnection);
+        return numberOfStatements;
 
-		repositoryConnection = setUpSesameRepository(config, defaultNS, false);
-		try {
-			RepositoryResult<Statement> statements = repositoryConnection
-					.getStatements(null, null, null, false);
-			ArrayList<Statement> art = new ArrayList<Statement>();
-			while (statements.hasNext())
-				art.add(statements.next());
-			numberOfStatements = art.size();
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		closeRepository(repositoryConnection);
-		return numberOfStatements;
+    }
 
-	}
+    public RepositoryConnection setupDummyRepos() {
 
-	public RepositoryConnection setupDummyRepos() {
+        try {
 
-		try {
+            repository = new SailRepository(new MemoryStore());
+            repository.initialize();
+            repositoryConnection = repository.getConnection();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return repositoryConnection;
+    }
 
-			repository = new SailRepository(new MemoryStore());
-			repository.initialize();
-			repositoryConnection = repository.getConnection();
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return repositoryConnection;
-	}
+    /*
+     * public void updateRepository(String updateString) { RepositoryConnection
+     * repositoryConnection=null; try { Update update =
+     * repositoryConnection.prepareUpdate( QueryLanguage.SPARQL, updateString);
+     * update.execute(); } catch (RepositoryException e) { // TODO
+     * Auto-generated catch block e.printStackTrace(); } catch
+     * (MalformedQueryException e) { // TODO Auto-generated catch block
+     * e.printStackTrace(); } catch (UpdateExecutionException e) { // TODO
+     * Auto-generated catch block e.printStackTrace(); }
+     * System.out.println("data updated"); }
+     */
+    public void dumpFileInRepository(File f, String defaultNS,
+            RDFFormat format, URI contextURI) {
+        try {
+            repositoryConnection.add(f, defaultNS, format, contextURI);
 
-	/*
-	 * public void updateRepository(String updateString) { RepositoryConnection
-	 * repositoryConnection=null; try { Update update =
-	 * repositoryConnection.prepareUpdate( QueryLanguage.SPARQL, updateString);
-	 * update.execute(); } catch (RepositoryException e) { // TODO
-	 * Auto-generated catch block e.printStackTrace(); } catch
-	 * (MalformedQueryException e) { // TODO Auto-generated catch block
-	 * e.printStackTrace(); } catch (UpdateExecutionException e) { // TODO
-	 * Auto-generated catch block e.printStackTrace(); }
-	 * System.out.println("data updated"); }
-	 */
+        } catch (RDFParseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            System.out.println(" dump file in  "+repositoryConnection);
+            closeRepository(repositoryConnection);
+        }
+    }
 
-	public void dumpFileInRepository(File f, String defaultNS,
-			RDFFormat format, URI contextURI) {
-		try {
-			repositoryConnection.add(f, defaultNS, format, contextURI);
+    public void updateRepository(String updateString, RepositoryConnection rc) {
+        try {
 
-		} catch (RDFParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			closeRepository(repositoryConnection);
-		}
-	}
+            Update update = rc
+                    .prepareUpdate(QueryLanguage.SPARQL, updateString);
+            update.execute();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (UpdateExecutionException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        closeRepository(rc);
+        System.out.println("data updated");
+    }
 
-	public void updateRepository(String updateString, RepositoryConnection rc) {
-		try {
+    public GraphQueryResult getGraphQueryResults(String query,
+            RepositoryConnection repositoryConnection) {
+        GraphQueryResult result = null;
+        try {
+            File f = new File("rdf-result.rdf");
+            if (f.exists()) {
+                f.delete();
+            }
+            FileOutputStream fs = new FileOutputStream(f);
 
-			Update update = rc
-					.prepareUpdate(QueryLanguage.SPARQL, updateString);
-			update.execute();
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UpdateExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		closeRepository(rc);
-		System.out.println("data updated");
-	}
+            File ft = new File("ttl-results.ttl");
+            FileOutputStream fst = new FileOutputStream(ft);
 
-	public GraphQueryResult getGraphQueryResults(String query,
-			RepositoryConnection repositoryConnection) {
-		GraphQueryResult result = null;
-		try {
-			File f = new File("rdf-result.rdf");
-			if (f.exists())
-				f.delete();
-			FileOutputStream fs = new FileOutputStream(f);
+            RDFXMLWriter rdfwriter = new RDFXMLWriter(fs);
 
-			File ft = new File("ttl-results.ttl");
-			FileOutputStream fst = new FileOutputStream(ft);
+            TurtleWriter ttlWriter = new TurtleWriter(fst);
+            GraphQuery graphQuery = repositoryConnection.prepareGraphQuery(
+                    QueryLanguage.SPARQL, query);
+            result = graphQuery.evaluate();
+            // produces RDF output
+            graphQuery.evaluate(rdfwriter);
+            // produces Turtle output
+            graphQuery.evaluate(ttlWriter);
+            System.out.println("done");
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (QueryEvaluationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RDFHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-			RDFXMLWriter rdfwriter = new RDFXMLWriter(fs);
+        return result;
+    }
 
-			TurtleWriter ttlWriter = new TurtleWriter(fst);
-			GraphQuery graphQuery = repositoryConnection.prepareGraphQuery(
-					QueryLanguage.SPARQL, query);
-			result = graphQuery.evaluate();
-			// produces RDF output
-			graphQuery.evaluate(rdfwriter);
-			// produces Turtle output
-			graphQuery.evaluate(ttlWriter);
-			System.out.println("done");
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (QueryEvaluationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RDFHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return result;
-	}
-
-	public GraphQueryResult getGraphQueryResults(String query,
-			InputStream config, String defaultNS) {
-		GraphQueryResult result = null;
-		File fpath= new File(QueryEPCISEvents.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		System.out.println("*********" +fpath.getParent());
-		File fdir = new File((new File(fpath.getParent()).getParent()+"/dataFiles"));
-		System.out.println("*********" +fdir.getPath());
-		if(!fdir.exists())
-			fdir.mkdir();
+    public GraphQueryResult getGraphQueryResults(String query,
+            InputStream config, String defaultNS) {
+        GraphQueryResult result = null;
+        File fpath = new File(QueryEPCISEvents.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+        System.out.println("*********" + fpath.getParent());
+        File fdir = new File((new File(fpath.getParent()).getParent() + "/dataFiles"));
+        System.out.println("*********" + fdir.getPath());
+        if (!fdir.exists()) {
+            fdir.mkdir();
+        }
 	//	File f = new File(fdir.getPath()+"/query-results.json");
-		
-		
-		try {
-			File f = new File(fdir.getPath()+"/rdf-result.rdf");
-			if (f.exists())
-				f.delete();
-			FileOutputStream fs = new FileOutputStream(f);
 
-			File ft = new File(fdir.getPath()+"/ttl-results.ttl");
-		//	File ftj = new File("json-results.json");
-			FileOutputStream fst = new FileOutputStream(ft);
+        try {
+            File f = new File(fdir.getPath() + "/rdf-result.rdf");
+            if (f.exists()) {
+                f.delete();
+            }
+            FileOutputStream fs = new FileOutputStream(f);
+
+            File ft = new File(fdir.getPath() + "/ttl-results.ttl");
+            //	File ftj = new File("json-results.json");
+            FileOutputStream fst = new FileOutputStream(ft);
 		//	FileOutputStream fj = new FileOutputStream(ftj);
-		
-			RDFXMLPrettyWriter rdfwriter = new RDFXMLPrettyWriter(fs);
 
-			TurtleWriter ttlWriter = new TurtleWriter(fst);
-		
-			RepositoryConnection rc = setUpSesameRepository(config, defaultNS,
-					false);
-		
-			GraphQuery graphQuery = rc.prepareGraphQuery(QueryLanguage.SPARQL,
-					query);
-		
+            RDFXMLPrettyWriter rdfwriter = new RDFXMLPrettyWriter(fs);
+
+            TurtleWriter ttlWriter = new TurtleWriter(fst);
+
+            RepositoryConnection rc = setUpSesameRepository(config, repositoryURL, defaultNS,
+                    false);
+
+            GraphQuery graphQuery = rc.prepareGraphQuery(QueryLanguage.SPARQL,
+                    query);
+
 		//	result = graphQuery.evaluate();
-			// produces RDF output
-			graphQuery.evaluate(rdfwriter);
-			// produces Turtle output
-			graphQuery.evaluate(ttlWriter);
-		//	graphQuery.evaluate(rdfw);
-			fst.flush();
-			fst.close();
+            // produces RDF output
+            graphQuery.evaluate(rdfwriter);
+            // produces Turtle output
+            graphQuery.evaluate(ttlWriter);
+            //	graphQuery.evaluate(rdfw);
+            fst.flush();
+            fst.close();
 		//	fj.flush();
-	//	fj.close();
-			System.out.println(" turtle file exists"+ft.exists());
-			System.out.println(ft.getAbsolutePath());
-		fs.flush();
-		fs.close();
-	//		closeRepository(rc);
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (QueryEvaluationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RDFHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            //	fj.close();
+            System.out.println(" turtle file exists" + ft.exists());
+            System.out.println(ft.getAbsolutePath());
+            fs.flush();
+            fs.close();
+            //		closeRepository(rc);
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (QueryEvaluationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RDFHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	// a generic tuple query method for the class
-	public ArrayList<BindingSet> returnQueryResults(String query,
-			InputStream config, String defaultNS) {
+    // a generic tuple query method for the class
+    public ArrayList<BindingSet> returnQueryResults(String query,
+            InputStream config, String defaultNS) {
 
-		System.out.println(query);
+        System.out.println(query);
 
-		RepositoryConnection rc = setUpSesameRepository(config, defaultNS,
-				false);
-		TupleQueryResult result = getQueryResults(query, rc);
-		// cf.saveQueryResultsInJSON(query);
+        RepositoryConnection rc = setUpSesameRepository(config, repositoryURL, defaultNS,
+                false);
+        TupleQueryResult result = getQueryResults(query, rc);
+        // cf.saveQueryResultsInJSON(query);
 
-		ArrayList<BindingSet> bst = new ArrayList<BindingSet>();
-		try {
-			while (result.hasNext()) {
-				bst.add(result.next());
-			}
-		} catch (QueryEvaluationException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		closeRepository(rc);
-		try {
-			result.close();
-		} catch (QueryEvaluationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// System.out.println(bst.size());
-		rc = null;
-		return bst;
-	}
+        ArrayList<BindingSet> bst = new ArrayList<BindingSet>();
+        try {
+            while (result.hasNext()) {
+                bst.add(result.next());
+            }
+        } catch (QueryEvaluationException e2) {
+            // TODO Auto-generated catch block
+            e2.printStackTrace();
+        }
+        closeRepository(rc);
+        try {
+            result.close();
+        } catch (QueryEvaluationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // System.out.println(bst.size());
+        rc = null;
+        return bst;
+    }
 
-	public TupleQueryResult getQueryResults(String query,
-			RepositoryConnection repositoryConnection) {
+    public TupleQueryResult getQueryResults(String query,
+            RepositoryConnection repositoryConnection) {
 
-		TupleQueryResult result = null;
+        TupleQueryResult result = null;
 
-		try {
-			TupleQuery tupleQuery = repositoryConnection.prepareTupleQuery(
-					QueryLanguage.SPARQL, query);
+        try {
+            TupleQuery tupleQuery = repositoryConnection.prepareTupleQuery(
+                    QueryLanguage.SPARQL, query);
 
-			result = tupleQuery.evaluate();
+            result = tupleQuery.evaluate();
 
-			SPARQLResultsJSONWriter srj = null;
-			RDFXMLWriter rdf = null;
+            SPARQLResultsJSONWriter srj = null;
+            RDFXMLWriter rdf = null;
 
-			File fpath= new File(QueryEPCISEvents.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-			System.out.println("*********" +fpath.getParent());
-			File fdir = new File((new File(fpath.getParent()).getParent()+"/dataFiles"));
-			System.out.println("*********" +fdir.getPath());
-			if(!fdir.exists())
-				fdir.mkdir();
-			File f = new File(fdir.getPath()+"/query-results.json");
-			
-			if (f.exists())
-				f.delete();
-			FileOutputStream fs = new FileOutputStream(f);
-			srj = new SPARQLResultsJSONWriter(fs);
-			
-			tupleQuery.evaluate(srj);
-		
-			 
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (QueryEvaluationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (TupleQueryResultHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            File fpath = new File(QueryEPCISEvents.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+            System.out.println("*********" + fpath.getParent());
+            File fdir = new File((new File(fpath.getParent()).getParent() + "/dataFiles"));
+            System.out.println("*********" + fdir.getPath());
+            if (!fdir.exists()) {
+                fdir.mkdir();
+            }
+            File f = new File(fdir.getPath() + "/query-results.json");
 
-		repositoryConnection = null;
-		return result;
-	}
+            if (f.exists()) {
+                f.delete();
+            }
+            FileOutputStream fs = new FileOutputStream(f);
+            srj = new SPARQLResultsJSONWriter(fs);
 
-	public void saveQueryResultsInJSON(
-			RepositoryConnection repositoryConnection, String query) {
+            tupleQuery.evaluate(srj);
 
-		try {
-			TupleQuery tupleQuery = repositoryConnection.prepareTupleQuery(
-					QueryLanguage.SPARQL, query);
-			SPARQLResultsJSONWriter srj = null;
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (QueryEvaluationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (TupleQueryResultHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-			FileOutputStream fs = new FileOutputStream(new File(
-					"query-results.json"));
-			srj = new SPARQLResultsJSONWriter(fs);
-			tupleQuery.evaluate(srj);
+        repositoryConnection = null;
+        return result;
+    }
 
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (QueryEvaluationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (TupleQueryResultHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    public void saveQueryResultsInJSON(
+            RepositoryConnection repositoryConnection, String query) {
 
-		closeRepository(repositoryConnection);
-		repositoryConnection = null;
-	}
+        try {
+            TupleQuery tupleQuery = repositoryConnection.prepareTupleQuery(
+                    QueryLanguage.SPARQL, query);
+            SPARQLResultsJSONWriter srj = null;
 
-	public void closeRepository(RepositoryConnection reposConn) {
-		flushRepository(reposConn);
-	}
+            FileOutputStream fs = new FileOutputStream(new File(
+                    "query-results.json"));
+            srj = new SPARQLResultsJSONWriter(fs);
+            tupleQuery.evaluate(srj);
 
-	/**
-	 * 
-	 * @param namespacePrefixes
-	 *            The data structure holding the prefixes of the namespaces.
-	 */
-	public void setnamespacesInRepository(Map namespacePrefixes) {
-		Set keySet = namespacePrefixes.keySet();
-		Iterator itk = keySet.iterator();
-		try {
-			while (itk.hasNext()) {
-				String key = itk.next().toString();
-				System.out.println("key is ..." + key);
-				String value = namespacePrefixes.get(key).toString();
-				System.out.println("value is ..." + value);
-				System.out.println(repositoryConnection);
-				repositoryConnection.setNamespace(key, value);
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (QueryEvaluationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (TupleQueryResultHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-			}
-			closeRepository(repositoryConnection);
-		} catch (RepositoryException e) {
+        closeRepository(repositoryConnection);
+        repositoryConnection = null;
+    }
 
-			e.printStackTrace();
-		} finally {
+    public void closeRepository(RepositoryConnection reposConn) {
+        System.out.println("close repo..."+reposConn);
+        flushRepository(reposConn);
+    }
 
-		}
+    /**
+     *
+     * @param namespacePrefixes The data structure holding the prefixes of the
+     * namespaces.
+     */
+    public void setnamespacesInRepository(Map namespacePrefixes) {
+        Set keySet = namespacePrefixes.keySet();
+        Iterator itk = keySet.iterator();
+        try {
+            while (itk.hasNext()) {
+                String key = itk.next().toString();
+                System.out.println("key is ..." + key);
+                String value = namespacePrefixes.get(key).toString();
+                System.out.println("value is ..." + value);
+                System.out.println(repositoryConnection);
+                repositoryConnection.setNamespace(key, value);
 
-	}
+            }
+            closeRepository(repositoryConnection);
+        } catch (RepositoryException e) {
 
-	// write the graph to a file
-	public void persistToFile(Graph myGraph, String f) {
-		try {
-			FileOutputStream fout = new FileOutputStream(f);
+            e.printStackTrace();
+        } finally {
 
-			RDFWriter turtleWriter = Rio.createWriter(RDFFormat.TURTLE, fout);
+        }
+
+    }
+
+    // write the graph to a file
+    public void persistToFile(Graph myGraph, String f) {
+        try {
+            FileOutputStream fout = new FileOutputStream(f);
+
+            RDFWriter turtleWriter = Rio.createWriter(RDFFormat.TURTLE, fout);
 			// WriterConfig config = writer.getWriterConfig();
-			// config.set(BasicWriterSettings.PRETTY_PRINT, true);
-			turtleWriter.startRDF();
-			for (Statement statement : myGraph) {
-				// System.out.println(statement);
-				turtleWriter.handleStatement(statement);
-			}
-			turtleWriter.endRDF();
-			fout.close();
-			// System.out.println(f.getAbsolutePath() + " "+f.exists());
-		} catch (UnsupportedRDFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RDFHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+            // config.set(BasicWriterSettings.PRETTY_PRINT, true);
+            turtleWriter.startRDF();
+            for (Statement statement : myGraph) {
+                // System.out.println(statement);
+                turtleWriter.handleStatement(statement);
+            }
+            turtleWriter.endRDF();
+            fout.close();
+            // System.out.println(f.getAbsolutePath() + " "+f.exists());
+        } catch (UnsupportedRDFormatException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RDFHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
 	// print graph
+    public void printGraph(Graph myGraph) {
+        try {
 
-	public void printGraph(Graph myGraph) {
-		try {
+            RDFWriter turtleWriter = Rio.createWriter(RDFFormat.JSONLD,
+                    System.out);
+            turtleWriter.startRDF();
+            for (Statement statement : myGraph) {
+                System.out.println(statement);
+                turtleWriter.handleStatement(statement);
+            }
+            turtleWriter.endRDF();
+        } catch (UnsupportedRDFormatException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RDFHandlerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-			RDFWriter turtleWriter = Rio.createWriter(RDFFormat.JSONLD,
-					System.out);
-			turtleWriter.startRDF();
-			for (Statement statement : myGraph) {
-				System.out.println(statement);
-				turtleWriter.handleStatement(statement);
-			}
-			turtleWriter.endRDF();
-		} catch (UnsupportedRDFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RDFHandlerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+    public Model parseFile(InputStream configurationFile, RDFFormat format,
+            String defaultNamespace) throws Exception {
+        final Graph graph = new GraphImpl();
+        RDFParser parser = Rio.createParser(format);
+        org.openrdf.model.Model myGraph = new org.openrdf.model.impl.LinkedHashModel();
 
-	public Model parseFile(InputStream configurationFile, RDFFormat format,
-			String defaultNamespace) throws Exception {
-		final Graph graph = new GraphImpl();
-		RDFParser parser = Rio.createParser(format);
-		org.openrdf.model.Model myGraph = new org.openrdf.model.impl.LinkedHashModel();
+        /*
+         * RDFHandler handler = new RDFHandler() { public void endRDF() throws
+         * RDFHandlerException { }
+         * 
+         * public void handleComment(String arg0) throws RDFHandlerException { }
+         * 
+         * public void handleNamespace(String arg0, String arg1) throws
+         * RDFHandlerException { }
+         * 
+         * public void handleStatement(Statement statement) throws
+         * RDFHandlerException { graph.add(statement); }
+         * 
+         * public void startRDF() throws RDFHandlerException { } };
+         */
+        parser.setRDFHandler(new StatementCollector(myGraph));
 
-		/*
-		 * RDFHandler handler = new RDFHandler() { public void endRDF() throws
-		 * RDFHandlerException { }
-		 * 
-		 * public void handleComment(String arg0) throws RDFHandlerException { }
-		 * 
-		 * public void handleNamespace(String arg0, String arg1) throws
-		 * RDFHandlerException { }
-		 * 
-		 * public void handleStatement(Statement statement) throws
-		 * RDFHandlerException { graph.add(statement); }
-		 * 
-		 * public void startRDF() throws RDFHandlerException { } };
-		 */
-		parser.setRDFHandler(new StatementCollector(myGraph));
+        parser.parse(configurationFile, defaultNamespace);
+        return myGraph;
+    }
 
-		parser.parse(configurationFile, defaultNamespace);
-		return myGraph;
-	}
+    public RepositoryConnection getCurrentRepositoryConnection() {
+        return this.repositoryConnection;
+    }
 
-	public RepositoryConnection getCurrentRepositoryConnection() {
-		return this.repositoryConnection;
-	}
+    public RepositoryConnection setUpSesameRepository(InputStream config, String url,
+            String defaultNS, boolean addData) {
 
+        repositoryConnection = null;
+        try {
+          
+            repositoryURL=url;
+            repositoryManager = new RemoteRepositoryManager(repositoryURL);
 
-
-	public RepositoryConnection setUpSesameRepository(InputStream config,
-			String defaultNS, boolean addData) {
-
-		repositoryConnection = null;
-		try {
-			String url = "http://windermere.aston.ac.uk/openrdf-sesame/";
-			repositoryManager = new RemoteRepositoryManager(url);
-
-			// Parse the configuration file, assuming it is in Turtle format
-			final Model model = parseFile(config, RDFFormat.TURTLE, defaultNS);
+            // Parse the configuration file, assuming it is in Turtle format
+            final Model model = parseFile(config, RDFFormat.TURTLE, defaultNS);
 			// Look for the subject of the first matching statement for
-			// "?s type Repository"
-			Iterator<Statement> iter = model
-					.filter(null,
-							RDF.TYPE,
-							new URIImpl(
-									"http://www.openrdf.org/config/repository#Repository"))
-					.iterator();
-			Resource repositoryNode = null;
-			if (iter.hasNext()) {
-				Statement st = iter.next();
-				System.out.println(st);
-				repositoryNode = st.getSubject();
-			}
+            // "?s type Repository"
+            Iterator<Statement> iter = model
+                    .filter(null,
+                            RDF.TYPE,
+                            new URIImpl(
+                                    "http://www.openrdf.org/config/repository#Repository"))
+                    .iterator();
+            Resource repositoryNode = null;
+            if (iter.hasNext()) {
+                Statement st = iter.next();
+                System.out.println(st);
+                repositoryNode = st.getSubject();
+            }
 
-			iter = model
-					.filter(null,
-							new URIImpl(
-									"http://www.openrdf.org/config/repository#repositoryID"),
-							null).iterator();
-			String repositoryID = null;
-			if (iter.hasNext()) {
-				Statement st = iter.next();
-				Value valueString = st.getObject();
-				repositoryID = valueString.stringValue();
-			}
-			
-			System.out.println("the repos ID" + repositoryID);
-			// Initialise the repository manager
-			repositoryManager.initialize();
+            iter = model
+                    .filter(null,
+                            new URIImpl(
+                                    "http://www.openrdf.org/config/repository#repositoryID"),
+                            null).iterator();
+            String repositoryID = null;
+            if (iter.hasNext()) {
+                Statement st = iter.next();
+                Value valueString = st.getObject();
+                repositoryID = valueString.stringValue();
+            }
 
-			/*// remove the repository if there is an existing repository with the
-			// same ID
+            System.out.println("the repos ID" + repositoryID);
+            // Initialise the repository manager
+            repositoryManager.initialize();
+
+            /*// remove the repository if there is an existing repository with the
+             // same ID
 			
-			  if (addData) { if
-			  (repositoryManager.hasRepositoryConfig(repositoryID)) {
-			  removeRepository(repositoryID);
+             if (addData) { if
+             (repositoryManager.hasRepositoryConfig(repositoryID)) {
+             removeRepository(repositoryID);
 			  
-			  } }*/
-			 
+             } }*/
 			// Create a configuration object from the configuration file and add
-			// it
-			// to the repositoryManager
+            // it
+            // to the repositoryManager
+            RepositoryConfig repositoryConfig = RepositoryConfig.create(model,
+                    repositoryNode);
+            repositoryManager.addRepositoryConfig(repositoryConfig);
 
-			RepositoryConfig repositoryConfig = RepositoryConfig.create(model,
-					repositoryNode);
-			repositoryManager.addRepositoryConfig(repositoryConfig);
+            repository = repositoryManager.getRepository(repositoryID);
 
-			repository = repositoryManager.getRepository(repositoryID);
+            // Open a connection to this repository
+            repositoryConnection = repository.getConnection();
+            repositoryConnection.begin();
 
-			// Open a connection to this repository
-			repositoryConnection = repository.getConnection();
-			repositoryConnection.begin();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RepositoryConfigException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RepositoryConfigException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        try {
+            System.out.println("connection setup+repo"
+                    + repositoryConnection.isActive());
+        } catch (UnknownTransactionStateException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return repositoryConnection;
+    }
 
-		try {
-			System.out.println("connection setup+repo"
-					+ repositoryConnection.isActive());
-		} catch (UnknownTransactionStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return repositoryConnection;
-	}
+    /*
+     * This method removes a repository from the repository maanger
+     */
+    private void removeRepository(String repositoryID) {
 
-	/*
-	 * This method removes a repository from the repository maanger
-	 */
-	private void removeRepository(String repositoryID) {
+        try {
+            System.out.println("repository removed..."
+                    + repositoryManager.removeRepository(repositoryID));
 
-		try {
-			System.out.println("repository removed..."
-					+ repositoryManager.removeRepository(repositoryID));
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (RepositoryConfigException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RepositoryConfigException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    }
 
-	}
+    /*
+     * This method checks if a repository is instantiated, it then commits the
+     * contents and then
+     */
+    /*
+     * private void flushRepository() { System.out.println("Flushing..."); try {
+     * 
+     * if (repository != null) { repositoryConnection.commit();
+     * repositoryConnection.close(); repository.shutDown(); if
+     * (repositoryManager != null) repositoryManager.shutDown();
+     * 
+     * } } catch (RepositoryException e) { // TODO Auto-generated catch block
+     * e.printStackTrace(); }
+     * 
+     * }
+     */
+    private void flushRepository(RepositoryConnection reposConn) {
+        System.out.println("Flushing..."+reposConn);
 
-	/*
-	 * This method checks if a repository is instantiated, it then commits the
-	 * contents and then
-	 */
-	/*
-	 * private void flushRepository() { System.out.println("Flushing..."); try {
-	 * 
-	 * if (repository != null) { repositoryConnection.commit();
-	 * repositoryConnection.close(); repository.shutDown(); if
-	 * (repositoryManager != null) repositoryManager.shutDown();
-	 * 
-	 * } } catch (RepositoryException e) { // TODO Auto-generated catch block
-	 * e.printStackTrace(); }
-	 * 
-	 * }
-	 */
+        try {
+            System.out.println(reposConn);
+            reposConn.commit();
+            reposConn.close();
+            reposConn.getRepository().shutDown();
 
-	private void flushRepository(RepositoryConnection reposConn) {
-		System.out.println("Flushing...");
+            repository = null;
+            repositoryConnection = null;
+            repositoryManager = null;
 
-		try {
-System.out.println(reposConn);
-			reposConn.commit();
-			reposConn.close();
-			reposConn.getRepository().shutDown();
+            if (reposConn.getRepository() != null) {
+                reposConn.commit();
+                reposConn.close();
 
-			repository = null;
-			repositoryConnection = null;
-			repositoryManager = null;
+                reposConn.getRepository().shutDown();
+                reposConn = null;
+            }
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // repositoryManager.shutDown();
+        System.out.println("repository..." + reposConn);
+    }
 
-			if (reposConn.getRepository() != null) {
-				reposConn.commit();
-				reposConn.close();
+    public void dumpdataInRepository(RepositoryConnection repositoryConnection, Graph myGraph, String contextStr,
+            boolean clear) {
 
-				reposConn.getRepository().shutDown();
-				reposConn = null;
-			}
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// repositoryManager.shutDown();
-		System.out.println("repository..." + reposConn);
-	}
-
-	public void dumpdataInRepository(RepositoryConnection repositoryConnection, Graph myGraph, String contextStr,
-			boolean clear) {
-
-		System.out.println("size of graph is..." + myGraph.size());
-		try {
-			URI context = new URIImpl(contextStr);
-			System.out.println(repositoryConnection);
-			System.out.println(context);
+        System.out.println("size of graph is..." + myGraph.size());
+        try {
+            URI context = new URIImpl(contextStr);
+            System.out.println(repositoryConnection);
+            System.out.println(context);
 			// System.out.println((repositoryConnection.getStatements(null,
-			// null,
-			// null, true, context)).asList().size());
-			if (clear) {
-				repositoryConnection.clear(context);
-				repositoryConnection.commit();
-			}
+            // null,
+            // null, true, context)).asList().size());
+            if (clear) {
+                repositoryConnection.clear(context);
+                repositoryConnection.commit();
+            }
 			// System.out.println((repositoryConnection.getStatements(null,
-			// null, null, true, context)).asList().size());
-			System.out.println("Actual size. 1.. "
-					+ repositoryConnection.size(context));
+            // null, null, true, context)).asList().size());
+            System.out.println("Actual size. 1.. "
+                    + repositoryConnection.size(context));
 
-			for (Statement statement : myGraph) {
-				repositoryConnection.add(statement, context);
-			}
-			System.out.println("Actual size..2. "
-					+ repositoryConnection.size(context));
-			flushRepository(repositoryConnection);
-		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            for (Statement statement : myGraph) {
+                repositoryConnection.add(statement, context);
+            }
+            System.out.println("Actual size..2. "
+                    + repositoryConnection.size(context));
+            flushRepository(repositoryConnection);
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-	}
+    }
 
-	public double roundOfToSeven(double number) {
-		BigDecimal bd = new BigDecimal(number);
-		bd = bd.setScale(7, BigDecimal.ROUND_DOWN);
-		number = bd.doubleValue();
-		return number;
-	}
+    public void dumpdataInRepository(Graph myGraph, String contextStr,
+            boolean clear) {
 
-	public double roundOfToTwo(double number) {
-		BigDecimal bd = new BigDecimal(number);
-		bd = bd.setScale(2, BigDecimal.ROUND_DOWN);
-		number = bd.doubleValue();
-		return number;
-	}
+        System.out.println("size of graph is..." + myGraph.size());
+        try {
+            URI context = new URIImpl(contextStr);
+            System.out.println(repositoryConnection);
+            System.out.println(context);
+			// System.out.println((repositoryConnection.getStatements(null,
+            // null,
+            // null, true, context)).asList().size());
+            if (clear) {
+                repositoryConnection.clear(context);
+                repositoryConnection.commit();
+            }
+			// System.out.println((repositoryConnection.getStatements(null,
+            // null, null, true, context)).asList().size());
+            System.out.println("Actual size. 1.. "
+                    + repositoryConnection.size(context));
 
-	public String roundOfToSeven(String number) {
-		BigDecimal bd = new BigDecimal(number);
-		bd = bd.setScale(7, BigDecimal.ROUND_DOWN);
-		number = bd.toString();
-		return number;
-	}
+            for (Statement statement : myGraph) {
+                repositoryConnection.add(statement, context);
+            }
+            System.out.println("Actual size..2. "
+                    + repositoryConnection.size(context));
+            flushRepository(repositoryConnection);
+        } catch (RepositoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-	public String roundOfToTwo(String number) {
-		BigDecimal bd = new BigDecimal(number);
-		bd = bd.setScale(2, BigDecimal.ROUND_DOWN);
-		number = bd.toString();
-		return number;
-	}
+    }
 
-	public void copyFileFromURL(String path, String dir) {
-		// System.out.println(vStr);
-		URL url = null;
-		java.net.URI uri = null;
-		BufferedReader bufReader = null;
-		BufferedWriter bufWriter = null;
+    
+    
+    
+    public double roundOfToSeven(double number) {
+        BigDecimal bd = new BigDecimal(number);
+        bd = bd.setScale(7, BigDecimal.ROUND_DOWN);
+        number = bd.doubleValue();
+        return number;
+    }
 
-		try {
-			url = new URL(path);
-			uri = new java.net.URI(path);
+    public double roundOfToTwo(double number) {
+        BigDecimal bd = new BigDecimal(number);
+        bd = bd.setScale(2, BigDecimal.ROUND_DOWN);
+        number = bd.doubleValue();
+        return number;
+    }
 
-			HttpURLConnection ht = (HttpURLConnection) url.openConnection();
-			int code = ht.getResponseCode();
+    public String roundOfToSeven(String number) {
+        BigDecimal bd = new BigDecimal(number);
+        bd = bd.setScale(7, BigDecimal.ROUND_DOWN);
+        number = bd.toString();
+        return number;
+    }
 
-			if (uri != null && code == 200) {
-				bufReader = new BufferedReader(new InputStreamReader(
-						url.openStream()));
-				if (bufReader != null) {
-					String line = null;
-					String filename = path.substring(path.lastIndexOf(":") + 1)
-							+ ".rdf";
-					System.out.println(filename);
+    public String roundOfToTwo(String number) {
+        BigDecimal bd = new BigDecimal(number);
+        bd = bd.setScale(2, BigDecimal.ROUND_DOWN);
+        number = bd.toString();
+        return number;
+    }
 
-					File f = new File(dir, filename);
+    public void copyFileFromURL(String path, String dir) {
+        // System.out.println(vStr);
+        URL url = null;
+        java.net.URI uri = null;
+        BufferedReader bufReader = null;
+        BufferedWriter bufWriter = null;
 
-					if (f.exists())
-						f.delete();
+        try {
+            url = new URL(path);
+            uri = new java.net.URI(path);
 
-					bufWriter = new BufferedWriter(new FileWriter(f));
+            HttpURLConnection ht = (HttpURLConnection) url.openConnection();
+            int code = ht.getResponseCode();
 
-					boolean flag = false;
-					while ((line = bufReader.readLine()) != null) {
-						// Process the data, here we just print it out
+            if (uri != null && code == 200) {
+                bufReader = new BufferedReader(new InputStreamReader(
+                        url.openStream()));
+                if (bufReader != null) {
+                    String line = null;
+                    String filename = path.substring(path.lastIndexOf(":") + 1)
+                            + ".rdf";
+                    System.out.println(filename);
 
-						bufWriter.append(line);
-						bufWriter.append("\n");
+                    File f = new File(dir, filename);
 
-					}
-				}
-				bufReader.close();
-				bufWriter.close();
+                    if (f.exists()) {
+                        f.delete();
+                    }
 
-			}
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+                    bufWriter = new BufferedWriter(new FileWriter(f));
 
-	}
+                    boolean flag = false;
+                    while ((line = bufReader.readLine()) != null) {
+                        // Process the data, here we just print it out
+
+                        bufWriter.append(line);
+                        bufWriter.append("\n");
+
+                    }
+                }
+                bufReader.close();
+                bufWriter.close();
+
+            }
+        } catch (URISyntaxException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
 
 }
