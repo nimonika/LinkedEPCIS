@@ -5,8 +5,10 @@ import java.util.Date;
 import org.apache.log4j.Logger;
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
+import org.openrdf.model.Model;
 import org.openrdf.model.URI;
 import org.openrdf.model.ValueFactory;
+import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.model.vocabulary.RDFS;
@@ -37,13 +39,15 @@ public abstract class EPCISEvent {
 	protected ArrayList<Transaction> transactions = null;
 	Logger logger = Logger.getLogger(EPCISEvent.class);
         protected URI eventURI=null;
+         URI aggregationURI=null;
+         
 
 	/**
 	 * @param recordTime the recordTime to set
 	 */
 	public void setRecordTime(Date recordTime) {
-		logger.info(mySubject+"...is the subject");
-		myGraph=epcs.setEventRecordedTime(ns, myGraph, mySubject, recordTime);
+	//	logger.info(mySubject+"...is the subject");
+		myGraph=epcs.setEventRecordedTime(ns, myGraph, mySubject, epcs.getCurrentTimeAndDateInXMLGregorianCalendar());
 	}
 
 	private void setupBaseEventModel(Namespaces ns1, String eventPrefix,
@@ -62,8 +66,7 @@ public abstract class EPCISEvent {
                 eventURI=mySubject;
 		myObject = myFactory.createURI(ns.getIRIForPrefix("eem"), eventType);
                 
-                String graphURI=ns.getContextURI();
-                logger.info(graphURI);
+               
 		myGraph.add(mySubject, RDF.TYPE, myObject);
 		
 		myGraph.add(
@@ -86,10 +89,15 @@ public abstract class EPCISEvent {
 	protected EPCISEvent(Namespaces ns, String eventPrefix,
 			String aggregationPrefix, String aggregationID, String eventType) {
 		setupBaseEventModel(ns, eventPrefix, eventType);
+                aggregationURI=myFactory.createURI(
+				ns.getIRIForPrefix(aggregationPrefix), aggregationID);
 		myGraph.add(mySubject, myFactory.createURI(ns.getIRIForPrefix("eem"),
-				"hasAggregationURI"), myFactory.createURI(
-				ns.getIRIForPrefix(aggregationPrefix), aggregationID));
+				"hasAggregationURI"), aggregationURI);
 	}
+
+    protected URI getAggregationURI() {
+        return aggregationURI;
+    }
 
 	protected EPCISEvent(Namespaces ns, String eventPrefix, String eventType) {
 
@@ -170,7 +178,7 @@ public abstract class EPCISEvent {
 
 	public void persistEvent(String file) {
 		persistTransaction();
-		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
+		epcs.persistGraphToFile(myGraph, file, ns);
 	}
 	
 
@@ -196,7 +204,9 @@ public abstract class EPCISEvent {
 	protected void persistEvent(Graph g, ArrayList epcArray, String file) {
 		myGraph=g;
 		persistEvent(epcArray);
-		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
+		epcs.persistGraphToFile(myGraph, file, ns);
+               
+              
 	}
 
 	// method for persisting the event
@@ -204,14 +214,22 @@ public abstract class EPCISEvent {
 
 		persistTransaction();
 		myGraph = epcs.addEPCsToGraph(ns, myGraph, mySubject, epcArray);
+                
+              
 	}
 
 	// method for persisting the event
 	protected void persistEvent(ArrayList epcArray, String file) {
 		persistEvent(epcArray);
-		epcs.persistGraphToFile(myGraph, file, ns.getNameSpacesPrefixes());
+		epcs.persistGraphToFile(myGraph, file, ns);
+                
+             
 	}
 
+        
+         
+        
+        
 	private Graph setTemporalProperties(Namespaces ns, Graph myGraph,
 			URI subject) {
 		myGraph = epcs.setTemporalProperties(ns, myGraph, subject);
