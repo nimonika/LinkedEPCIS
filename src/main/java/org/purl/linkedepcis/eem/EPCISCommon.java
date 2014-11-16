@@ -1,12 +1,13 @@
 package org.purl.linkedepcis.eem;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -16,9 +17,11 @@ import org.apache.log4j.Logger;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
+import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.ValueFactory;
+import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.rio.RDFFormat;
@@ -28,6 +31,7 @@ import org.openrdf.rio.Rio;
 import org.openrdf.rio.UnsupportedRDFormatException;
 import org.openrdf.rio.WriterConfig;
 import org.openrdf.rio.helpers.BasicWriterSettings;
+import org.openrdf.rio.helpers.ContextStatementCollector;
 import org.openrdf.rio.turtle.TurtleWriter;
 
 import org.purl.linkedepcis.cbv.Address;
@@ -39,7 +43,8 @@ public class EPCISCommon {
 
     // counter for the event. This increments with every call to getEventIRI();
     private int eventCounter = 0;
-Logger logger = Logger.getLogger(EPCISCommon.class);
+    Logger logger = Logger.getLogger(EPCISCommon.class);
+
     public void addEPCTOEvent() {
 
     }
@@ -74,33 +79,59 @@ Logger logger = Logger.getLogger(EPCISCommon.class);
     }
 
     // write the graph to a file with namespace mappings
-    public void persistGraphToFile(Graph myGraph, String f, Map<String, String> namespaces) {
+    public void persistGraphToFile(Graph myGraph, String f, Namespaces namespaces) {
         // printGraph(myGraph);
         try {
-            FileOutputStream fout = new FileOutputStream(f);
-            logger.info("file to be written ..."+f);
-            TurtleWriter turtleWriter = new TurtleWriter(fout);
-            //handle namespaces
-            for (Map.Entry<String, String> entry : namespaces.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                //use key and value
-                logger.info(key+"   "+value);
-                turtleWriter.handleNamespace(key, value);
+          
 
-            }
+            FileOutputStream fout = new FileOutputStream(f, true);
+
+        //    logger.info("file to be written ..." + f);
+            //     TurtleWriter turtleWriter = new TurtleWriter(fout);
+
+            //      addToStream(namespaces);
+            ValueFactory myFactory = ValueFactoryImpl.getInstance();
+            Model result = new LinkedHashModel();
+            ContextStatementCollector csc = new ContextStatementCollector(result, myFactory, myFactory.createURI(namespaces.getContextURI()));
 
             WriterConfig config = new WriterConfig();
             config.set(BasicWriterSettings.PRETTY_PRINT, true);
 
-            turtleWriter.setWriterConfig(config);
-            turtleWriter.startRDF();
-            for (Statement statement : myGraph) {
-                // System.out.println(statement);
-                turtleWriter.handleStatement(statement);
+//         //   turtleWriter.setWriterConfig(config);
+//            //   turtleWriter.startRDF();
+//            csc.startRDF();
+//            for (Statement statement : myGraph) {
+//                // System.out.println(statement);
+//
+//                csc.handleStatement(statement);
+//
+//                //   turtleWriter.handleStatement(statement);
+//            }
+            Map<String, String> ns = namespaces.getNameSpacesPrefixes();
+            for (Map.Entry<String, String> entry : ns.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                //use key and value
+              //  logger.info(key + "   " + value);
+                //  turtleWriter.handleNamespace(key, value);
+                csc.handleNamespace(key, value);
+
             }
-            turtleWriter.endRDF();
+
+            Rio.write(myGraph, csc);
+
+            //handle namespaces
+            if(f.contains("trig"))
+              Rio.write(result, fout, RDFFormat.TRIG);
+            else
+                persistGraphToFile(myGraph, f);
+                
+
+//            csc.endRDF();
+            //   turtleWriter.endRDF();
             fout.close();
+
+            addToStream(namespaces);
             // System.out.println(f.getAbsolutePath() + " "+f.exists());
         } catch (UnsupportedRDFormatException e) {
             // TODO Auto-generated catch block
@@ -119,7 +150,7 @@ Logger logger = Logger.getLogger(EPCISCommon.class);
     public void persistGraphToFile(Graph myGraph, String f) {
         // printGraph(myGraph);
         try {
-            FileOutputStream fout = new FileOutputStream(f);
+            FileOutputStream fout = new FileOutputStream(f, true);
 
             TurtleWriter turtleWriter = new TurtleWriter(fout);
             WriterConfig config = new WriterConfig();
@@ -159,7 +190,6 @@ Logger logger = Logger.getLogger(EPCISCommon.class);
 
             turtleWriter.startRDF();
             for (Statement statement : myGraph) {
-
                 turtleWriter.handleStatement(statement);
             }
             turtleWriter.endRDF();
@@ -512,15 +542,94 @@ Logger logger = Logger.getLogger(EPCISCommon.class);
      * @return
      */
     public Graph setEventRecordedTime(Namespaces ns, Graph myGraph,
-            URI subject, Date recordTime) {
+            URI subject, Literal recordTime) {
 
-        System.out.println(subject);
+     //   System.out.println(subject);
         myGraph.add(
                 subject,
                 ValueFactoryImpl.getInstance().createURI(
                         ns.getIRIForPrefix("eem"), "eventRecordedAt"),
-                ValueFactoryImpl.getInstance().createLiteral(recordTime));
+                recordTime);
 
         return myGraph;
+    }
+
+    public Literal getCurrentTimeAndDateInXMLGregorianCalendar() {
+        GregorianCalendar gc = (GregorianCalendar) GregorianCalendar.getInstance();
+        gc.setTimeInMillis(System.currentTimeMillis());
+        DatatypeFactory df = null;
+        try {
+            df = DatatypeFactory.newInstance();
+        } catch (DatatypeConfigurationException ex) {
+            java.util.logging.Logger.getLogger(EPCISCommon.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        XMLGregorianCalendar xc = df.newXMLGregorianCalendar(gc);
+
+        Literal myLiteral = ValueFactoryImpl.getInstance().createLiteral(
+                xc);
+
+        return myLiteral;
+    }
+
+    Graph streamGraph = new LinkedHashModel();
+
+    private void addToStream(Namespaces ns) {
+
+        setEventRecordedTime(ns, streamGraph, ValueFactoryImpl.getInstance().createURI(ns.getContextURI()), getCurrentTimeAndDateInXMLGregorianCalendar());
+        persistStreamGraph(streamGraph, ns);
+
+    }
+
+    void persistStreamGraph(Graph streamGraph, Namespaces ns) {
+
+        File fstream = new File("streams");
+        try {
+            if (!fstream.exists()) {
+                fstream.mkdir();
+                fstream.createNewFile();
+            } else {
+                logger.info("file exists");
+            }
+            FileOutputStream fout = new FileOutputStream("streams//streamGraph.trig", true);
+
+//           TurtleWriter turtleWriter = new TurtleWriter(fout);
+//            WriterConfig config = new WriterConfig();
+//            config.set(BasicWriterSettings.PRETTY_PRINT, true);
+//
+//            turtleWriter.setWriterConfig(config);
+//            turtleWriter.startRDF();
+//            for (Statement statement : streamGraph) {
+//                // System.out.println(statement);
+//                turtleWriter.handleStatement(statement);
+//            }
+//            turtleWriter.endRDF();
+//            fout.close();
+            ValueFactory myFactory = ValueFactoryImpl.getInstance();
+            Model result = new LinkedHashModel();
+            ContextStatementCollector csc = new ContextStatementCollector(result, myFactory, myFactory.createURI(ns.getBaseIRI().concat("eventStream")));
+
+//              Map<String, String> namespaces = ns.getNameSpacesPrefixes();
+//            for (Map.Entry<String, String> entry : namespaces.entrySet()) {
+//                String key = entry.getKey();
+//                String value = entry.getValue();
+//                //use key and value
+//                logger.info(key + "   " + value);
+//                //  turtleWriter.handleNamespace(key, value);
+//                csc.handleNamespace(key, value);
+//
+//            }
+            Rio.write(streamGraph, csc);
+
+            //handle namespaces
+            Rio.write(result, fout, RDFFormat.TURTLE);
+
+            fout.close();
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(EPCISCommon.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (RDFHandlerException ex) {
+            java.util.logging.Logger.getLogger(EPCISCommon.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 }
