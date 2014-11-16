@@ -24,8 +24,18 @@ public class AggregationEvent extends EPCISEvent{
 		// setup the epclist
 				epcArray = new ArrayList<String>();
 	}
+        
+        public URI getAggregationURI()
+        {
+            
+            
+            return super.getAggregationURI();
+            
+        }
 	
 	public AggregationEvent(Namespaces ns, String prefix, URI aggregationURI) {
+            
+            
 		
 	}
 	
